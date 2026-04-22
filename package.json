@@ -1,0 +1,27 @@
+{
+  "name": "testweb-e2e",
+  "version": "1.0.0",
+  "description": "Playwright E2E tests for ShoesHub",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:qa": "cross-env BASE_URL=https://shoeshub-qa.onrender.com playwright test",
+    "test:staging": "cross-env BASE_URL=https://shoeshub-staging.onrender.com playwright test",
+    "test:prod": "cross-env BASE_URL=https://shoeshub-prod.onrender.com playwright test",
+    "report": "playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "cross-env": "^10.1.0"
+  }
+}
