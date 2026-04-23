@@ -15,7 +15,8 @@
     "perf:load": "k6 run k6/load.js",
     "perf:stress": "k6 run k6/stress.js",
     "perf:smoke:qa": "cross-env BASE_URL=https://shoeshub-qa.onrender.com k6 run k6/smoke.js",
-    "perf:scenario": "k6 run k6/scenarios.js"
+    "perf:scenario": "k6 run k6/scenarios.js",
+    "perf:transaction": "k6 run k6/transactions.js"
   },
   "keywords": [],
   "author": "",

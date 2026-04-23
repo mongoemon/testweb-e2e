@@ -299,12 +299,13 @@ open k6/reports/smoke-report.html        # macOS
 ```
 k6/
 ├── helpers/
-│   ├── auth.js        # login() + authHeaders() + BASE_URL
-│   └── report.js      # summary() → HTML + stdout text
-├── smoke.js           # 2 VU, 1m — ตรวจสอบ critical flows ทุกตัว
-├── load.js            # ramp 0→50 VU, 8m — normal traffic simulation
-├── stress.js          # ramp 0→200 VU, 10m — หา breaking point
-└── scenarios.js       # Scenario-based: 3 กลุ่มผู้ใช้รันพร้อมกัน
+│   ├── auth.js          # login() + authHeaders() + BASE_URL
+│   └── report.js        # summary() → HTML + stdout text
+├── smoke.js             # 2 VU, 1m — ตรวจสอบ critical flows ทุกตัว
+├── load.js              # ramp 0→50 VU, 8m — normal traffic simulation
+├── stress.js            # ramp 0→200 VU, 10m — หา breaking point
+├── scenarios.js         # Scenario-based: 3 กลุ่มผู้ใช้รันพร้อมกัน
+└── transactions.js      # Transaction-based: user journey end-to-end พร้อม custom metrics
 ```
 
 ### SLO (Thresholds)
@@ -331,6 +332,9 @@ npm run perf:stress
 
 # Scenario-based — 3 กลุ่มผู้ใช้รันพร้อมกัน (~9 นาที)
 npm run perf:scenario
+
+# Transaction-based — วัด end-to-end user journey (5 นาที)
+npm run perf:transaction
 
 # Smoke บน QA environment
 npm run perf:smoke:qa
@@ -380,6 +384,59 @@ BASE_URL=https://shoeshub-staging.onrender.com k6 run k6/load.js
 'http_req_duration{scenario:returning_customer}': ['p(95)<800'],   // มี auth overhead
 'http_req_duration{scenario:checkout_burst}':     ['p(95)<3000'],  // ยืดหยุ่นในช่วง spike
 'http_req_failed{scenario:checkout_burst}':       ['rate<0.10'],   // error budget สูงกว่า
+```
+
+---
+
+## Transaction-Based Testing
+
+`k6/transactions.js` จำลอง user journey ที่ API รันต่อกันเป็นลำดับ — เหมือน JMeter Transaction Controller
+
+### JMeter vs k6
+
+| JMeter | k6 |
+|--------|----|
+| Transaction Controller | `group()` + custom `Trend` metric |
+| Sampler | `http.get()` / `http.post()` |
+| Assertion | `check()` |
+| Regular Expression Extractor | `res.json('field')` |
+| If Controller | `if/else` ธรรมดา |
+| Pre/Post Processor | code ก่อน/หลัง request |
+
+### User Journeys (3 แบบ)
+
+```
+Traffic แบ่งตามพฤติกรรมจริง:
+
+  60% → TX Browse Only       list → search → detail (ไม่ login)
+  25% → TX Add Cart Only     login → browse → add cart → ออก (cart abandonment)
+  15% → TX Full Purchase     login → browse → add cart → checkout → confirm order
+```
+
+### Custom Metrics
+
+| Metric | วัดอะไร |
+|--------|---------|
+| `tx_full_purchase_ms` | เวลาทั้ง flow ตั้งแต่ login จน order confirm |
+| `tx_checkout_only_ms` | เวลาเฉพาะ place order |
+| `tx_success_rate` | % ของ transaction ที่สำเร็จครบทุก step |
+| `tx_success` / `tx_fail` | นับจำนวน transaction |
+
+### Data Flow ระหว่าง Steps
+
+ใน k6 response ของ step หนึ่งส่งต่อ step ถัดไปได้เลย ไม่ต้อง extractor แยก:
+
+```js
+// Step 1: Login — ได้ token
+var loginRes = http.post('/api/auth/login', ...);
+var token = loginRes.json('access_token');   // ← ดึงตรงจาก response
+
+// Step 6: Place Order — ได้ order id
+var order = http.post('/api/orders', ..., { headers: { Authorization: 'Bearer ' + token } });
+var orderId = order.json('id');              // ← ใช้ต่อใน step 7 ได้เลย
+
+// Step 7: Confirm Order
+var confirm = http.get('/api/orders/' + orderId, ...);
 ```
 
 ---
