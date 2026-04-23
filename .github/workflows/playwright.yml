@@ -1,0 +1,55 @@
+name: Playwright E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'qa'
+        type: choice
+        options: [qa, staging, prod]
+
+env:
+  BASE_URL_qa: https://shoeshub-qa.onrender.com
+  BASE_URL_staging: https://shoeshub-staging.onrender.com
+  BASE_URL_prod: https://shoeshub-prod.onrender.com
+
+jobs:
+  test:
+    name: E2E Tests — ${{ github.event.inputs.environment || 'qa' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run tests
+        run: npx playwright test
+        env:
+          BASE_URL: ${{ env[format('BASE_URL_{0}', github.event.inputs.environment || 'qa')] }}
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.event.inputs.environment || 'qa' }}-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 30

@@ -18,10 +18,12 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
+    "@types/xlsx": "^0.0.35",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "cross-env": "^10.1.0"
+    "cross-env": "^10.1.0",
+    "xlsx": "^0.18.5"
   }
 }

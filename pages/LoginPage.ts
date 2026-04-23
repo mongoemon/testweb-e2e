@@ -9,9 +9,9 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await this.page.fill('[data-testid="login-username"]', username);
-    await this.page.fill('[data-testid="login-password"]', password);
-    await this.page.click('[data-testid="login-submit"]');
+    await this.page.fill('[data-testid="username-input"]', username);
+    await this.page.fill('[data-testid="password-input"]', password);
+    await this.page.click('[data-testid="login-btn"]');
   }
 
   async expectError(message: string) {
