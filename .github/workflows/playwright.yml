@@ -15,9 +15,11 @@ on:
         options: [qa, staging, prod]
 
 env:
-  BASE_URL_qa: https://shoeshub-qa.onrender.com
+  BASE_URL_qa:      https://shoeshub-qa.onrender.com
   BASE_URL_staging: https://shoeshub-staging.onrender.com
-  BASE_URL_prod: https://shoeshub-prod.onrender.com
+  BASE_URL_prod:    https://shoeshub-prod.onrender.com
+  # แก้ warning: force actions/checkout, setup-node, upload-artifact ใช้ Node 24 runtime
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test:
@@ -32,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -41,8 +43,28 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      # Render.com free tier จะนอนหลับเมื่อไม่มี traffic
+      # ส่ง request ปลุกแล้วรอ max 90s ให้ server ready
+      - name: Wake up server
+        run: |
+          TARGET="${BASE_URL}"
+          echo "Pinging $TARGET ..."
+          for i in $(seq 1 9); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$TARGET/api/products" || echo "000")
+            echo "  attempt $i → HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Server is ready."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Server did not respond with 200 after 90s — aborting."
+          exit 1
+        env:
+          BASE_URL: ${{ env[format('BASE_URL_{0}', github.event.inputs.environment || 'qa')] }}
+
       - name: Run tests
-        run: npx playwright test
+        run: npx playwright test --reporter=github,html
         env:
           BASE_URL: ${{ env[format('BASE_URL_{0}', github.event.inputs.environment || 'qa')] }}
 
@@ -67,8 +89,12 @@ jobs:
       - name: Install k6
         run: |
           sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo gpg --no-default-keyring \
+            --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
           sudo apt-get update
           sudo apt-get install k6
 
