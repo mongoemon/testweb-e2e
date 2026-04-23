@@ -299,11 +299,12 @@ open k6/reports/smoke-report.html        # macOS
 ```
 k6/
 ├── helpers/
-│   ├── auth.js      # login() + authHeaders() + BASE_URL
-│   └── report.js    # summary() → HTML + stdout text
-├── smoke.js         # 2 VU, 1m — ตรวจสอบ critical flows ทุกตัว
-├── load.js          # ramp 0→50 VU, 8m — normal traffic simulation
-└── stress.js        # ramp 0→200 VU, 10m — หา breaking point
+│   ├── auth.js        # login() + authHeaders() + BASE_URL
+│   └── report.js      # summary() → HTML + stdout text
+├── smoke.js           # 2 VU, 1m — ตรวจสอบ critical flows ทุกตัว
+├── load.js            # ramp 0→50 VU, 8m — normal traffic simulation
+├── stress.js          # ramp 0→200 VU, 10m — หา breaking point
+└── scenarios.js       # Scenario-based: 3 กลุ่มผู้ใช้รันพร้อมกัน
 ```
 
 ### SLO (Thresholds)
@@ -328,6 +329,9 @@ npm run perf:load
 # Stress — หา breaking point 200 VU (10 นาที)
 npm run perf:stress
 
+# Scenario-based — 3 กลุ่มผู้ใช้รันพร้อมกัน (~9 นาที)
+npm run perf:scenario
+
 # Smoke บน QA environment
 npm run perf:smoke:qa
 
@@ -336,6 +340,47 @@ BASE_URL=https://shoeshub-staging.onrender.com k6 run k6/load.js
 ```
 
 > **หมายเหตุ:** อย่ารัน load/stress บน production — ใช้ DEV หรือ staging เท่านั้น
+
+---
+
+## Scenario-Based Testing
+
+`k6/scenarios.js` จำลองพฤติกรรมผู้ใช้หลายกลุ่มที่รันพร้อมกัน แทนที่จะ ramp VU เป็นตัวเลขเดียว
+
+### Timeline
+
+```
+0m ──────────────────────────────────── 9m
+│
+├─ [browse_anonymous]    0m ──────────── 9m   ramping-vus (0→40→40→0)
+├─ [returning_customer]      1m ──────── 9m   constant-vus (15 VU)
+└─ [checkout_burst]              4m ── 7m     ramping-arrival-rate (spike)
+```
+
+### Executor Types
+
+| Executor | ควบคุม | เหมาะกับ |
+|----------|--------|----------|
+| `ramping-vus` | จำนวน VU (คน) | Traffic ที่ค่อย ๆ เพิ่มแบบปกติ |
+| `constant-vus` | จำนวน VU คงที่ | Steady-state load ของกลุ่มผู้ใช้ที่ active |
+| `ramping-arrival-rate` | Request/วินาที (RPS) | Flash sale, spike event — rate คงที่แม้ backend ช้า |
+
+### Scenario Functions
+
+| Function | Scenario | พฤติกรรม |
+|----------|----------|----------|
+| `browseAnonymous` | `browse_anonymous` | List → Search → Product detail (ไม่ login) |
+| `authenticatedShopper` | `returning_customer` | Me → Categories → Detail → Add cart (50%) |
+| `checkoutFlow` | `checkout_burst` | Clear → Add → Place order ทันที |
+
+### Thresholds แยกต่อ Scenario
+
+```js
+'http_req_duration{scenario:browse_anonymous}':   ['p(95)<400'],   // เร็วสุด
+'http_req_duration{scenario:returning_customer}': ['p(95)<800'],   // มี auth overhead
+'http_req_duration{scenario:checkout_burst}':     ['p(95)<3000'],  // ยืดหยุ่นในช่วง spike
+'http_req_failed{scenario:checkout_burst}':       ['rate<0.10'],   // error budget สูงกว่า
+```
 
 ---
 
