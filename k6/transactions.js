@@ -80,8 +80,24 @@ export function handleSummary(data) {
 // ---------------------------------------------------------------------------
 
 export function setup() {
-  var token = login('testuser', 'test1234');
-  return { token: token };
+  var token      = login('testuser', 'test1234');
+  var adminToken = login('admin',    'admin1234');
+  return { token: token, adminToken: adminToken };
+}
+
+export function teardown(data) {
+  var res = http.del(
+    BASE_URL + '/api/admin/orders/cleanup',
+    JSON.stringify({ shipping_name_prefix: 'PERF_TX_' }),
+    authHeaders(data.adminToken)
+  );
+  if (res.status === 200) {
+    var deleted = res.json('deleted') || '?';
+    console.log('[teardown] Deleted ' + deleted + ' PERF_TX_ orders.');
+  } else {
+    console.log('[teardown] Cleanup skipped (HTTP ' + res.status + '). ' +
+                'Run manually: DELETE FROM orders WHERE shipping_name LIKE \'PERF_TX_%\'');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +257,7 @@ function txFullPurchaseFlow(token) {
     var order = http.post(
       BASE_URL + '/api/orders',
       JSON.stringify({
-        shipping_name:    'Transaction User',
+        shipping_name:    'PERF_TX_VU' + __VU,
         shipping_address: '1 Test Road',
         shipping_city:    'Bangkok',
         shipping_postal:  '10110',
@@ -251,6 +267,7 @@ function txFullPurchaseFlow(token) {
       authHeaders(token, { endpoint: 'orders', tx: 'full_purchase' })
     );
     var orderOk = check(order, { 'order 200': function (r) { return r.status === 200; } });
+
 
     txCheckoutOnly.add(Date.now() - checkoutStart); // บันทึก checkout time
 
