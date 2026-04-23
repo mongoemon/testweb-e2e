@@ -25,6 +25,34 @@ npx playwright install chromium
 
 ---
 
+## VSCode Extensions
+
+Extensions ที่ติดตั้งอยู่และใช้งานกับโปรเจคนี้:
+
+| Extension | Version | ใช้ทำอะไร |
+|-----------|---------|-----------|
+| [Playwright Test for VSCode](https://marketplace.visualstudio.com/items?itemName=ms-playwright.playwright) `ms-playwright.playwright` | 1.1.17 | รัน/debug test จาก sidebar, record test ด้วย Codegen, pick locator บน browser |
+| [GitHub Actions](https://marketplace.visualstudio.com/items?itemName=github.vscode-github-actions) `github.vscode-github-actions` | 0.31.5 | ดู workflow run, trigger manual run, validate syntax ใน `.github/workflows/` |
+| [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens) `eamodio.gitlens` | 17.12.2 | Git blame inline, ดู commit history, เปรียบเทียบ branch |
+| [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) `redhat.vscode-yaml` | 1.22.0 | Syntax validation และ autocomplete สำหรับ `playwright.yml` |
+| [Bruno](https://marketplace.visualstudio.com/items?itemName=bruno-api-client.bruno) `bruno-api-client.bruno` | 5.0.0 | REST API client สำหรับทดสอบ endpoint ใน `http://localhost:8000/docs` ก่อนเขียน test |
+| [Cucumber](https://marketplace.visualstudio.com/items?itemName=cucumberopen.cucumber-official) `cucumberopen.cucumber-official` | 1.11.0 | Syntax highlighting สำหรับ BDD feature files (ถ้าขยายไปใช้ Gherkin ในอนาคต) |
+| [Rainbow CSV](https://marketplace.visualstudio.com/items?itemName=mechatroner.rainbow-csv) `mechatroner.rainbow-csv` | 3.24.1 | แสดงสี column ใน CSV สำหรับดู export test data |
+
+### ติดตั้งทีเดียวทุกตัว
+
+```bash
+code --install-extension ms-playwright.playwright
+code --install-extension github.vscode-github-actions
+code --install-extension eamodio.gitlens
+code --install-extension redhat.vscode-yaml
+code --install-extension bruno-api-client.bruno
+code --install-extension cucumberopen.cucumber-official
+code --install-extension mechatroner.rainbow-csv
+```
+
+---
+
 ## Project Structure
 
 ```
