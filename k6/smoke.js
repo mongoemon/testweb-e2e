@@ -7,6 +7,7 @@
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { login, authHeaders, BASE_URL } from './helpers/auth.js';
+import { summary } from './helpers/report.js';
 
 export var options = {
   vus: 2,
@@ -28,6 +29,10 @@ var SHIPPING = JSON.stringify({
   shipping_phone:   '081-000-0000',
   payment_method:   'credit_card',
 });
+
+export function handleSummary(data) {
+  return summary(data, 'smoke-report.html');
+}
 
 export function setup() {
   var token = login('testuser', 'test1234');

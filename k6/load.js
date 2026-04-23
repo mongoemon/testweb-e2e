@@ -6,6 +6,7 @@
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { login, authHeaders, BASE_URL } from './helpers/auth.js';
+import { summary } from './helpers/report.js';
 
 export var options = {
   stages: [
@@ -20,6 +21,10 @@ export var options = {
     'http_req_duration{endpoint:cart}':     ['p(95)<400'],
   },
 };
+
+export function handleSummary(data) {
+  return summary(data, 'load-report.html');
+}
 
 export function setup() {
   var token = login('testuser', 'test1234');

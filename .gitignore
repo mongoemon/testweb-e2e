@@ -2,6 +2,7 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+k6/reports/
 .env
 .env.*
 !.env.example

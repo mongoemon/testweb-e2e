@@ -72,7 +72,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install k6
 
+      - name: Create k6 reports dir
+        run: mkdir -p k6/reports
+
       - name: Run k6 smoke test
         run: k6 run k6/smoke.js
         env:
           BASE_URL: ${{ env[format('BASE_URL_{0}', github.event.inputs.environment || 'qa')] }}
+
+      - name: Upload k6 HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-smoke-report-${{ github.event.inputs.environment || 'qa' }}-${{ github.run_number }}
+          path: k6/reports/
+          retention-days: 30
