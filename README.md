@@ -225,6 +225,52 @@ Screenshot เมื่อ test fail อยู่ที่ `test-results/`
 
 ---
 
+## Performance Testing (k6)
+
+### โครงสร้าง
+
+```
+k6/
+├── helpers/
+│   └── auth.js     # login helper + bearer header
+├── smoke.js        # 2 VU, 1m — ตรวจสอบ critical flows ทุกตัว
+├── load.js         # ramp 0→50 VU, 8m — normal traffic simulation
+└── stress.js       # ramp 0→200 VU, 10m — หา breaking point
+```
+
+### SLO (Thresholds)
+
+| Endpoint group | Metric | เป้าหมาย |
+|---------------|--------|----------|
+| auth | p(95) response time | < 500ms |
+| products | p(95) response time | < 300ms |
+| cart | p(95) response time | < 400ms |
+| orders | p(95) response time | < 1000ms |
+| ทุก endpoint | error rate | < 1% |
+
+### รัน performance test
+
+```bash
+# Smoke — รันก่อน load/stress เสมอ (1 นาที)
+npm run perf:smoke
+
+# Load — normal traffic 50 VU (8 นาที)
+npm run perf:load
+
+# Stress — หา breaking point 200 VU (10 นาที)
+npm run perf:stress
+
+# Smoke บน QA environment
+npm run perf:smoke:qa
+
+# กำหนด BASE_URL เอง
+BASE_URL=https://shoeshub-staging.onrender.com k6 run k6/load.js
+```
+
+> **หมายเหตุ:** อย่ารัน load/stress บน production — ใช้ DEV หรือ staging เท่านั้น
+
+---
+
 ## Seed Accounts
 
 | Role | Username | Password |

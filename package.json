@@ -10,7 +10,11 @@
     "test:qa": "cross-env BASE_URL=https://shoeshub-qa.onrender.com playwright test",
     "test:staging": "cross-env BASE_URL=https://shoeshub-staging.onrender.com playwright test",
     "test:prod": "cross-env BASE_URL=https://shoeshub-prod.onrender.com playwright test",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "perf:smoke": "k6 run k6/smoke.js",
+    "perf:load": "k6 run k6/load.js",
+    "perf:stress": "k6 run k6/stress.js",
+    "perf:smoke:qa": "cross-env BASE_URL=https://shoeshub-qa.onrender.com k6 run k6/smoke.js"
   },
   "keywords": [],
   "author": "",
