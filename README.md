@@ -51,6 +51,27 @@ code --install-extension cucumberopen.cucumber-official
 code --install-extension mechatroner.rainbow-csv
 ```
 
+### แนะนำให้ติดตั้งเพิ่ม
+
+Extensions ด้านล่างยังไม่ได้ติดตั้ง แต่ช่วยเพิ่มประสิทธิภาพการเขียน test script อย่างมีนัยสำคัญ:
+
+| Extension | ใช้ทำอะไร | ทำไมถึงจำเป็น |
+|-----------|-----------|--------------|
+| [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) `dbaeumer.vscode-eslint` | Lint TypeScript แบบ real-time | จับ error เช่น unused import, `await` ที่ลืมใส่ ก่อนรัน test |
+| [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) `esbenp.prettier-vscode` | Auto-format เมื่อ save | รักษา code style ให้สม่ำเสมอทั้งทีม โดยไม่ต้องแก้มือ |
+| [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens) `usernamehw.errorlens` | แสดง TypeScript error inline ทันที | เห็น error ตรงบรรทัดโดยไม่ต้อง hover หรือดู Problems panel |
+| [Path Intellisense](https://marketplace.visualstudio.com/items?itemName=christian-kohler.path-intellisense) `christian-kohler.path-intellisense` | Autocomplete path ใน import | ป้องกัน import path ผิด เช่น `../../utils/excelReader` |
+| [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) `mikestead.dotenv` | Syntax highlight ไฟล์ `.env` | อ่าน env config เช่น `BASE_URL` ได้ง่ายขึ้น |
+
+```bash
+# ติดตั้งทั้ง 5 ตัวในคำสั่งเดียว
+code --install-extension dbaeumer.vscode-eslint
+code --install-extension esbenp.prettier-vscode
+code --install-extension usernamehw.errorlens
+code --install-extension christian-kohler.path-intellisense
+code --install-extension mikestead.dotenv
+```
+
 ---
 
 ## Project Structure
