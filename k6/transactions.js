@@ -21,7 +21,7 @@
 import http from 'k6/http';
 import { check, group, sleep, fail } from 'k6';
 import { Trend, Counter, Rate } from 'k6/metrics';
-import { BASE_URL } from './helpers/auth.js';
+import { login, authHeaders, BASE_URL } from './helpers/auth.js';
 import { summary } from './helpers/report.js';
 
 // ---------------------------------------------------------------------------
@@ -74,10 +74,22 @@ export function handleSummary(data) {
 }
 
 // ---------------------------------------------------------------------------
-// Default Function — เรียก transaction แต่ละแบบตาม user type
+// setup() — รันครั้งเดียวก่อนเริ่ม test ทุก VU
+// login ที่นี่ครั้งเดียว แล้วส่ง token ไปให้ทุก VU ผ่าน data
+// ป้องกัน VU แต่ละตัว login ซ้ำซึ่งจะ invalidate token ของ VU อื่น
 // ---------------------------------------------------------------------------
 
-export default function () {
+export function setup() {
+  var token = login('testuser', 'test1234');
+  return { token: token };
+}
+
+// ---------------------------------------------------------------------------
+// Default Function — เรียก transaction แต่ละแบบตาม user type
+// data.token มาจาก setup() — ใช้ร่วมกันทุก VU
+// ---------------------------------------------------------------------------
+
+export default function (data) {
 
   // สุ่มแบ่ง traffic ตามพฤติกรรมจริง
   var rand = Math.random();
@@ -87,10 +99,10 @@ export default function () {
     txBrowseOnly();
   } else if (rand < 0.85) {
     // 25% — login + เพิ่ม cart แต่ไม่ checkout (cart abandonment)
-    txAddToCartOnly();
+    txAddToCartOnly(data.token);
   } else {
     // 15% — full purchase flow
-    txFullPurchaseFlow();
+    txFullPurchaseFlow(data.token);
   }
 }
 
@@ -146,26 +158,10 @@ function txBrowseOnly() {
 // เทียบ JMeter: Transaction Controller "Add Cart Flow"
 // ---------------------------------------------------------------------------
 
-function txAddToCartOnly() {
+function txAddToCartOnly(token) {
   group('TX Add Cart Only', function () {
 
-    // ── Step 1: Login ────────────────────────────────────────────────────
-    // ใน JMeter ต้องใช้ "Regular Expression Extractor" ดึง token
-    // ใน k6 แค่ res.json('access_token') ได้เลย
-    var loginRes = http.post(
-      BASE_URL + '/api/auth/login',
-      JSON.stringify({ username: 'testuser', password: 'test1234' }),
-      { headers: { 'Content-Type': 'application/json' },
-        tags:    { endpoint: 'auth', tx: 'add_cart' } }
-    );
-    var loginOk = check(loginRes, { 'login 200': function (r) { return r.status === 200; } });
-    if (!loginOk) return; // abort — ถ้า login ไม่ได้ ทำต่อไม่ได้
-
-    var token = loginRes.json('access_token'); // ส่งต่อไป step ถัดไป
-
-    sleep(1);
-
-    // ── Step 2: Browse ───────────────────────────────────────────────────
+    // ── Step 1: Browse ───────────────────────────────────────────────────
     var list = http.get(
       BASE_URL + '/api/products',
       { tags: { endpoint: 'products', tx: 'add_cart' } }
@@ -174,16 +170,12 @@ function txAddToCartOnly() {
 
     sleep(randomBetween(2, 4));
 
-    // ── Step 3: Add to Cart ──────────────────────────────────────────────
-    // token จาก Step 1 ถูกส่งต่อมาที่นี่โดยตรง
+    // ── Step 2: Add to Cart ──────────────────────────────────────────────
+    // token มาจาก setup() — login ครั้งเดียวก่อนรัน ไม่ invalidate VU อื่น
     var add = http.post(
       BASE_URL + '/api/cart',
       JSON.stringify({ product_id: 1, size: '42', quantity: 1 }),
-      { headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-        },
-        tags: { endpoint: 'cart', tx: 'add_cart' } }
+      authHeaders(token, { endpoint: 'cart', tx: 'add_cart' })
     );
     check(add, { 'add cart 200': function (r) { return r.status === 200; } });
 
@@ -198,29 +190,13 @@ function txAddToCartOnly() {
 // เทียบ JMeter: Transaction Controller ครอบทุก sampler ตั้งแต่ต้นจนจบ
 // ---------------------------------------------------------------------------
 
-function txFullPurchaseFlow() {
+function txFullPurchaseFlow(token) {
   var txStart = Date.now(); // จับเวลาเริ่ม transaction
 
   group('TX Full Purchase Flow', function () {
 
-    // ── Step 1: Login ────────────────────────────────────────────────────
-    var loginRes = http.post(
-      BASE_URL + '/api/auth/login',
-      JSON.stringify({ username: 'testuser', password: 'test1234' }),
-      { headers: { 'Content-Type': 'application/json' },
-        tags:    { endpoint: 'auth', tx: 'full_purchase' } }
-    );
-    if (!check(loginRes, { 'login 200': function (r) { return r.status === 200; } })) {
-      txFailCounter.add(1);
-      txSuccessRate.add(false);
-      return;
-    }
-
-    var token = loginRes.json('access_token');
-
-    sleep(1);
-
-    // ── Step 2: Browse Products ──────────────────────────────────────────
+    // ── Step 1: Browse Products ──────────────────────────────────────────
+    // token มาจาก setup() แล้ว — ข้ามขั้นตอน login ในที่นี้
     var list = http.get(
       BASE_URL + '/api/products',
       { tags: { endpoint: 'products', tx: 'full_purchase' } }
@@ -229,7 +205,7 @@ function txFullPurchaseFlow() {
 
     sleep(randomBetween(1, 3));
 
-    // ── Step 3: View Product Detail ──────────────────────────────────────
+    // ── Step 2: View Product Detail ──────────────────────────────────────
     var detail = http.get(
       BASE_URL + '/api/products/1',
       { tags: { endpoint: 'products', tx: 'full_purchase' } }
@@ -238,22 +214,18 @@ function txFullPurchaseFlow() {
 
     sleep(randomBetween(1, 2));
 
-    // ── Step 4: Clear Cart (เคลียร์ก่อนเพื่อไม่ให้ค้าง) ─────────────────
+    // ── Step 3: Clear Cart (เคลียร์ก่อนเพื่อไม่ให้ค้าง) ─────────────────
     http.del(
       BASE_URL + '/api/cart/clear',
       null,
-      { headers: { 'Content-Type': 'application/json',
-                   'Authorization': 'Bearer ' + token },
-        tags:    { endpoint: 'cart', tx: 'full_purchase' } }
+      authHeaders(token, { endpoint: 'cart', tx: 'full_purchase' })
     );
 
-    // ── Step 5: Add to Cart ──────────────────────────────────────────────
+    // ── Step 4: Add to Cart ──────────────────────────────────────────────
     var add = http.post(
       BASE_URL + '/api/cart',
       JSON.stringify({ product_id: 1, size: '42', quantity: 1 }),
-      { headers: { 'Content-Type': 'application/json',
-                   'Authorization': 'Bearer ' + token },
-        tags:    { endpoint: 'cart', tx: 'full_purchase' } }
+      authHeaders(token, { endpoint: 'cart', tx: 'full_purchase' })
     );
     if (!check(add, { 'add cart 200': function (r) { return r.status === 200; } })) {
       txFailCounter.add(1);
@@ -263,7 +235,7 @@ function txFullPurchaseFlow() {
 
     sleep(randomBetween(1, 2)); // กรอก shipping info
 
-    // ── Step 6: Place Order ──────────────────────────────────────────────
+    // ── Step 5: Place Order ──────────────────────────────────────────────
     var checkoutStart = Date.now(); // จับเวลาเฉพาะ checkout portion
 
     var order = http.post(
@@ -276,9 +248,7 @@ function txFullPurchaseFlow() {
         shipping_phone:   '081-000-0001',
         payment_method:   'credit_card',
       }),
-      { headers: { 'Content-Type': 'application/json',
-                   'Authorization': 'Bearer ' + token },
-        tags:    { endpoint: 'orders', tx: 'full_purchase' } }
+      authHeaders(token, { endpoint: 'orders', tx: 'full_purchase' })
     );
     var orderOk = check(order, { 'order 200': function (r) { return r.status === 200; } });
 
@@ -290,15 +260,14 @@ function txFullPurchaseFlow() {
       return;
     }
 
-    // ── Step 7: Confirm — ดึง order detail ด้วย order id ที่ได้จาก step 6 ─
+    // ── Step 6: Confirm — ดึง order detail ด้วย order id ที่ได้จาก step 5 ─
     // ใน JMeter ต้องใช้ JSON Extractor — ใน k6 ใช้ .json('id') ได้เลย
     var orderId = order.json('id');
 
     if (orderId) {
       var confirm = http.get(
         BASE_URL + '/api/orders/' + orderId,
-        { headers: { 'Authorization': 'Bearer ' + token },
-          tags:    { endpoint: 'orders', tx: 'full_purchase' } }
+        authHeaders(token, { endpoint: 'orders', tx: 'full_purchase' })
       );
       check(confirm, {
         'confirm 200':              function (r) { return r.status === 200; },
