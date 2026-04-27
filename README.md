@@ -355,6 +355,60 @@ npm run report:allure:serve
 - `fixtures/auth.fixture.ts` — ครอบคลุม tests ที่ใช้ `userPage` / `adminPage`
 - `test.beforeEach()` ใน spec files ที่ใช้ plain `page`
 
+---
+
+### Screenshot / Video / Trace
+
+ควบคุมผ่าน `use` ใน `playwright.config.ts`:
+
+```ts
+use: {
+  screenshot: 'only-on-failure', // เปลี่ยนได้ตามตาราง
+  video:      'retain-on-failure',
+  trace:      'retain-on-failure',
+}
+```
+
+#### ค่าที่ใช้ได้
+
+**screenshot**
+
+| ค่า | พฤติกรรม |
+|-----|----------|
+| `'off'` | ไม่เก็บเลย |
+| `'only-on-failure'` | เก็บเฉพาะ test ที่ fail **(default)** |
+| `'on'` | เก็บภาพสุดท้ายของทุก test ทั้ง pass และ fail |
+
+**video**
+
+| ค่า | พฤติกรรม |
+|-----|----------|
+| `'off'` | ไม่บันทึก (เร็วขึ้น ~20–30%) |
+| `'retain-on-failure'` | บันทึกทุก test แต่ลบทิ้งถ้า pass **(default)** |
+| `'on'` | เก็บวิดีโอทุก test ทั้ง pass และ fail |
+
+**trace**
+
+| ค่า | พฤติกรรม |
+|-----|----------|
+| `'off'` | ไม่เก็บ |
+| `'retain-on-failure'` | เก็บเฉพาะ test ที่ fail **(default)** |
+| `'on'` | เก็บ trace ทุก test |
+| `'on-first-retry'` | เก็บเฉพาะครั้งแรกที่ retry (ใช้บน CI) |
+
+> Trace คือ Playwright's built-in time-travel debugger — เปิดดูด้วย `npx playwright show-trace trace.zip`
+
+#### แนวทางเลือกตาม use case
+
+| สถานการณ์ | screenshot | video | trace |
+|-----------|-----------|-------|-------|
+| **Local dev** (ปัจจุบัน) | `only-on-failure` | `retain-on-failure` | `retain-on-failure` |
+| **CI / PR check** | `only-on-failure` | `retain-on-failure` | `on-first-retry` |
+| **Debug test ที่ flaky** | `on` | `on` | `on` |
+| **Minimal / เร็วสุด** | `off` | `off` | `off` |
+
+ไฟล์จะถูกเก็บที่ `test-results/` (gitignored) และ Allure จะ attach เข้า report อัตโนมัติเมื่อรัน `npm run report:allure`
+
 ### k6 Performance Report
 
 HTML report สร้างอัตโนมัติหลังรัน k6:
