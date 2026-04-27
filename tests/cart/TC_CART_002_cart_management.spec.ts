@@ -14,8 +14,9 @@ function title(id: string) {
 }
 
 async function addProductToCart(page: any) {
-  await page.goto('/product.html?id=1');
-  await page.locator('[data-testid="size-option"], [data-testid="product-size-option"]').first().click();
+  await page.goto('/product.html?id=2');
+  await expect(page.locator('[data-testid="size-option"]').first()).toBeVisible();
+  await page.locator('[data-testid="size-option"]').first().click();
   await page.click('[data-testid="add-to-cart-btn"]');
 }
 

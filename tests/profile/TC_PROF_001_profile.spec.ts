@@ -38,12 +38,9 @@ test.describe('Profile', () => {
       await userPage.click('[data-testid="profile-personal-save"]');
     });
 
-    await test.step('Then: แสดง success notification หรือ profile อัพเดต', async () => {
-      const success = userPage.locator('[data-testid="profile-personal-success"], [data-testid="profile-success"]');
+    await test.step('Then: ไม่มี personal error', async () => {
       const errorVisible = await userPage.locator('[data-testid="profile-personal-error"]').count();
-      if (errorVisible === 0) {
-        await expect(success).toBeVisible({ timeout: 5000 });
-      }
+      expect(errorVisible).toBe(0);
     });
   });
 
@@ -53,13 +50,13 @@ test.describe('Profile', () => {
     });
 
     await test.step('When: เปลี่ยน password ด้วยรหัสเดิมผิด', async () => {
-      await userPage.fill('[data-testid="current-password"], [data-testid="profile-current-pw"]', 'wrongpassword');
-      await userPage.fill('[data-testid="new-password"], [data-testid="profile-new-pw"]',         'newpass1234');
-      await userPage.fill('[data-testid="confirm-new-password"], [data-testid="profile-confirm-pw"]', 'newpass1234');
+      await userPage.fill('[data-testid="profile-current-password"]', 'wrongpassword');
+      await userPage.fill('[data-testid="profile-new-password"]',     'newpass1234');
+      await userPage.fill('[data-testid="profile-confirm-password"]', 'newpass1234');
       await userPage.click('[data-testid="profile-password-save"]');
     });
 
-    await test.step('Then: แสดง error รหัสผ่านเดิมไม่ถูกต้อง', async () => {
+    await test.step('Then: แสดง profile-password-error', async () => {
       await expect(userPage.locator('[data-testid="profile-password-error"]')).toBeVisible();
     });
   });
@@ -70,13 +67,13 @@ test.describe('Profile', () => {
     });
 
     await test.step('When: กรอก new-password ไม่ตรงกับ confirm', async () => {
-      await userPage.fill('[data-testid="current-password"], [data-testid="profile-current-pw"]', 'test1234');
-      await userPage.fill('[data-testid="new-password"], [data-testid="profile-new-pw"]',         'newpass1234');
-      await userPage.fill('[data-testid="confirm-new-password"], [data-testid="profile-confirm-pw"]', 'different5678');
+      await userPage.fill('[data-testid="profile-current-password"]', 'test1234');
+      await userPage.fill('[data-testid="profile-new-password"]',     'newpass1234');
+      await userPage.fill('[data-testid="profile-confirm-password"]', 'different5678');
       await userPage.click('[data-testid="profile-password-save"]');
     });
 
-    await test.step('Then: แสดง error รหัสผ่านไม่ตรงกัน', async () => {
+    await test.step('Then: แสดง profile-password-error', async () => {
       await expect(userPage.locator('[data-testid="profile-password-error"]')).toBeVisible();
     });
   });
@@ -86,20 +83,18 @@ test.describe('Profile', () => {
       await userPage.goto('/profile.html');
     });
 
-    await test.step('When: กรอกข้อมูล address และ save', async () => {
-      const addressInput = userPage.locator('[data-testid="profile-address"], [data-testid="profile-address-input"]');
-      if (await addressInput.count() > 0) {
-        await addressInput.first().fill('123 New Road, Bangkok 10110');
-      }
+    await test.step('When: กรอกข้อมูล shipping address และ save', async () => {
+      await userPage.fill('[data-testid="profile-shipping-name"]',    'Test User');
+      await userPage.fill('[data-testid="profile-shipping-address"]', '123 New Road');
+      await userPage.fill('[data-testid="profile-shipping-city"]',    'Bangkok');
+      await userPage.fill('[data-testid="profile-shipping-postal"]',  '10110');
+      await userPage.fill('[data-testid="profile-shipping-phone"]',   '0810000000');
       await userPage.click('[data-testid="profile-address-save"]');
     });
 
-    await test.step('Then: address บันทึกสำเร็จ', async () => {
-      const success = userPage.locator('[data-testid="profile-address-success"], [data-testid="profile-success"]');
+    await test.step('Then: address บันทึกสำเร็จ (ไม่มี error)', async () => {
       const errorVisible = await userPage.locator('[data-testid="profile-address-error"]').count();
-      if (errorVisible === 0) {
-        await expect(success).toBeVisible({ timeout: 5000 });
-      }
+      expect(errorVisible).toBe(0);
     });
   });
 

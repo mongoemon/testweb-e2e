@@ -87,11 +87,17 @@ test.describe('Products — Product List', () => {
       await page.goto('/products.html');
     });
 
-    await test.step('When: เลือก Brand "Nike" จาก filter-brand', async () => {
+    await test.step('When: เลือก Brand "Nike" จาก filter-brand แล้วกด search', async () => {
       await page.selectOption('[data-testid="filter-brand"]', 'Nike');
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/products') && res.status() === 200),
+        page.click('[data-testid="search-btn"]'),
+      ]);
     });
 
     await test.step('Then: แสดงเฉพาะสินค้า brand Nike', async () => {
+      const cards = page.locator('[data-testid="product-card"]');
+      await expect(cards.first()).toBeVisible();
       const brands = page.locator('[data-testid="product-brand"]');
       const count  = await brands.count();
       for (let i = 0; i < count; i++) {
@@ -105,11 +111,16 @@ test.describe('Products — Product List', () => {
       await page.goto('/products.html');
     });
 
-    await test.step('When: เลือก Sort "ราคา: ต่ำ→สูง" จาก filter-sort', async () => {
+    await test.step('When: เลือก Sort "ราคา: ต่ำ→สูง" จาก filter-sort แล้วกด search', async () => {
       await page.selectOption('[data-testid="filter-sort"]', 'price_asc');
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/products') && res.status() === 200),
+        page.click('[data-testid="search-btn"]'),
+      ]);
     });
 
     await test.step('Then: สินค้าเรียงราคาจากน้อยไปมาก', async () => {
+      await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible();
       const prices = await page.locator('[data-testid="product-price"]').allTextContents();
       const nums   = prices.map(p => parseFloat(p.replace(/[^0-9.]/g, '')));
       for (let i = 1; i < nums.length; i++) {
@@ -123,11 +134,16 @@ test.describe('Products — Product List', () => {
       await page.goto('/products.html');
     });
 
-    await test.step('When: เลือก Sort "ราคา: สูง→ต่ำ" จาก filter-sort', async () => {
+    await test.step('When: เลือก Sort "ราคา: สูง→ต่ำ" จาก filter-sort แล้วกด search', async () => {
       await page.selectOption('[data-testid="filter-sort"]', 'price_desc');
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/products') && res.status() === 200),
+        page.click('[data-testid="search-btn"]'),
+      ]);
     });
 
     await test.step('Then: สินค้าเรียงราคาจากมากไปน้อย', async () => {
+      await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible();
       const prices = await page.locator('[data-testid="product-price"]').allTextContents();
       const nums   = prices.map(p => parseFloat(p.replace(/[^0-9.]/g, '')));
       for (let i = 1; i < nums.length; i++) {
@@ -141,10 +157,14 @@ test.describe('Products — Product List', () => {
       await page.goto('/products.html');
     });
 
-    await test.step('When: เลือก Category + Brand + Size พร้อมกัน', async () => {
+    await test.step('When: เลือก Category + Brand + Size พร้อมกัน แล้วกด search', async () => {
       await page.selectOption('[data-testid="filter-category"]', { index: 1 });
       await page.selectOption('[data-testid="filter-brand"]',    'Nike');
       await page.selectOption('[data-testid="filter-size"]',     '42');
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/products') && res.status() === 200),
+        page.click('[data-testid="search-btn"]'),
+      ]);
     });
 
     await test.step('Then: แสดงผลลัพธ์ที่ตรงกับทุกเงื่อนไข (หรือ empty-state)', async () => {

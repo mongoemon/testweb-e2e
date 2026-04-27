@@ -145,16 +145,18 @@ test.describe('Admin — Products Management', () => {
 
     await test.step('When: คลิก delete-product บนรายการสุดท้าย', async () => {
       const rows = adminPage.locator('[data-testid="product-row"]');
-      const count = await rows.count();
-      const lastRow = rows.nth(count - 1);
+      const beforeCount = await rows.count();
+      const lastRow = rows.nth(beforeCount - 1);
       const productId = await lastRow.getAttribute('data-id');
-      const beforeCount = count;
 
       adminPage.once('dialog', dialog => dialog.accept());
       if (productId) {
         await adminPage.click(`[data-testid="delete-product-${productId}"]`);
+        // wait for row to disappear from DOM
+        await expect(adminPage.locator(`[data-testid="delete-product-${productId}"]`)).not.toBeAttached({ timeout: 5000 });
       } else {
         await adminPage.locator('[data-testid^="delete-product"]').last().click();
+        await adminPage.waitForTimeout(1000);
       }
 
       const afterCount = await adminPage.locator('[data-testid="product-row"]').count();

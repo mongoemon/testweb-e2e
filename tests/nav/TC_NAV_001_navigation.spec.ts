@@ -14,7 +14,7 @@ function title(id: string) {
   return `[${t['TC_ID']}][${t['Priority']}] ${t['Test Name (TH)']}`;
 }
 
-test.describe('Navigation', () => {
+base.describe('Navigation', () => {
 
   base.test(title('TC-NAV-01'), async ({ page }) => {
     await base.test.step('When: เปิด Homepage', async () => {
