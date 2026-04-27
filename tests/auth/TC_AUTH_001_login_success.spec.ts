@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage';
 import { getTestCases, getTestData } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const authCases = getTestCases({ Module: 'Authentication' });
 const allData = getTestData();
@@ -25,6 +26,7 @@ function td(dataSetId: string) {
 // ─── Login ────────────────────────────────────────────────────────────────────
 
 test.describe('Authentication — Login', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-AUTH-05'), async ({ page }) => {
     const data = td('TD-AUTH-05');
@@ -90,6 +92,7 @@ test.describe('Authentication — Login', () => {
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 test.describe('Authentication — Logout', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-AUTH-08'), async ({ page }) => {
     const data = td('TD-AUTH-05');

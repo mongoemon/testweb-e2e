@@ -2,6 +2,8 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+allure-results/
+allure-report/
 k6/reports/
 .env
 .env.*

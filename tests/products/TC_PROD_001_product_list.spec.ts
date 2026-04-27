@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { getTestCases, getTestData } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const cases   = getTestCases({ Module: 'Products' });
 const allData = getTestData();
@@ -20,6 +21,7 @@ function td(dataSetId: string) {
 }
 
 test.describe('Products — Product List', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-PROD-01'), async ({ page }) => {
     await test.step('When: เปิด /products.html', async () => {

@@ -11,6 +11,9 @@
     "test:staging": "cross-env BASE_URL=https://shoeshub-staging.onrender.com playwright test",
     "test:prod": "cross-env BASE_URL=https://shoeshub-prod.onrender.com playwright test",
     "report": "playwright show-report",
+    "report:allure": "allure generate allure-results --clean -o allure-report",
+    "report:allure:open": "allure open allure-report --port 8080",
+    "report:allure:serve": "allure serve allure-results --port 8080",
     "perf:smoke": "k6 run k6/smoke.js",
     "perf:load": "k6 run k6/load.js",
     "perf:stress": "k6 run k6/stress.js",
@@ -25,6 +28,8 @@
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
     "@types/xlsx": "^0.0.35",
+    "allure-commandline": "^2.38.1",
+    "allure-playwright": "^3.7.1",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   },

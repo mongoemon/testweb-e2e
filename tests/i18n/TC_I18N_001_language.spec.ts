@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { getTestCases } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const cases = getTestCases({ Module: 'i18n' });
 
@@ -14,6 +15,7 @@ function title(id: string) {
 }
 
 test.describe('i18n — Language Switching', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-I18N-01'), async ({ page }) => {
     await test.step('Given: เปิด Homepage', async () => {

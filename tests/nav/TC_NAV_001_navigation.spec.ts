@@ -1,6 +1,7 @@
 import { test as base, expect } from '@playwright/test';
 import { test as authTest } from '../../fixtures/auth.fixture';
 import { getTestCases } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const cases = getTestCases({ Module: 'Navigation' });
 
@@ -15,6 +16,7 @@ function title(id: string) {
 }
 
 base.describe('Navigation', () => {
+  base.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   base.test(title('TC-NAV-01'), async ({ page }) => {
     await base.test.step('When: เปิด Homepage', async () => {

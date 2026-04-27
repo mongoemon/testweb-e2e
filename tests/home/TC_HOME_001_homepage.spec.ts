@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { getTestCases } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const cases = getTestCases({ Module: 'Homepage' });
 
@@ -14,6 +15,7 @@ function title(id: string) {
 }
 
 test.describe('Homepage', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-HOME-01'), async ({ page }) => {
     await test.step('When: เปิด / (Homepage)', async () => {

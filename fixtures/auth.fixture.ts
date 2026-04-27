@@ -1,5 +1,6 @@
-import { test as base, Page } from '@playwright/test';
+import { test as base, Page, TestInfo } from '@playwright/test';
 import { getCredentials } from '../utils/excelReader';
+import { autoAnnotate } from '../utils/allure';
 
 type AuthFixtures = {
   userPage: Page;
@@ -16,14 +17,16 @@ async function loginAs(page: Page, username: string, password: string) {
 }
 
 export const test = base.extend<AuthFixtures>({
-  userPage: async ({ browser }, use) => {
+  userPage: async ({ browser }, use, testInfo: TestInfo) => {
+    await autoAnnotate(testInfo);
     const page = await browser.newPage();
     const { username, password } = getCredentials('TC-AUTH-05');
     await loginAs(page, username, password);
     await use(page);
     await page.close();
   },
-  adminPage: async ({ browser }, use) => {
+  adminPage: async ({ browser }, use, testInfo: TestInfo) => {
+    await autoAnnotate(testInfo);
     const page = await browser.newPage();
     const { username, password } = getCredentials('TC-AUTH-06');
     await loginAs(page, username, password);

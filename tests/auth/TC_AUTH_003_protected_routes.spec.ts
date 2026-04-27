@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { test as authTest } from '../../fixtures/auth.fixture';
 import { getTestCases } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const cases = getTestCases({ Module: 'Authentication' });
 
@@ -15,6 +16,7 @@ function title(id: string) {
 }
 
 test.describe('Authentication — Protected Routes', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-AUTH-09'), async ({ page }) => {
     await test.step('Given: ผู้ใช้ยังไม่ได้ login', async () => {});

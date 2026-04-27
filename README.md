@@ -1,6 +1,8 @@
 # ShoesHub E2E Test Suite
 
-Playwright E2E + API tests สำหรับ [ShoesHub](http://localhost:8000) — ครอบคลุม Authentication, Cart, Checkout, Products, Orders และ Admin พร้อม k6 Performance Testing
+Playwright E2E + API tests สำหรับ [ShoesHub](http://127.0.0.1:8000) — ครอบคลุม Authentication, Cart, Checkout, Products, Orders, Profile, Admin และ i18n พร้อม Allure Report และ k6 Performance Testing
+
+**100 test cases** across 10 modules (E2E + API)
 
 ---
 
@@ -10,19 +12,42 @@ Playwright E2E + API tests สำหรับ [ShoesHub](http://localhost:8000) 
 |------|---------|
 | Node.js | 18+ |
 | npm | 9+ |
+| Java | 11+ (สำหรับ Allure CLI) |
 | k6 | 0.49+ (สำหรับ performance test) |
+
+> **Windows 11 note:** ใช้ `http://127.0.0.1:8000` เสมอ — `localhost` บน Windows 11 resolve เป็น IPv6 `::1` ซึ่งอาจชี้ไปยัง server ที่ผิด
 
 ---
 
 ## Installation
 
 ```bash
-# 1. ติดตั้ง dependencies
+# 1. ติดตั้ง dependencies (รวม allure-playwright และ allure-commandline)
 npm install
 
 # 2. ติดตั้ง Playwright browsers
 npx playwright install chromium
 ```
+
+### ติดตั้ง Allure CLI (สำหรับ generate report)
+
+Allure CLI ต้องใช้ Java 11+ และติดตั้งแยกจาก npm:
+
+```bash
+# macOS (Homebrew)
+brew install allure
+
+# Windows (Scoop)
+scoop install allure
+
+# Windows (Chocolatey)
+choco install allure
+
+# ตรวจสอบว่าติดตั้งสำเร็จ
+allure --version
+```
+
+> `allure-playwright` (npm package) และ `allure-commandline` (npm package) ถูกติดตั้งไว้แล้วใน `devDependencies` ใช้งานผ่าน `npx allure` ได้โดยไม่ต้องติดตั้ง global
 
 ### ติดตั้ง k6 (สำหรับ performance test)
 
@@ -55,7 +80,7 @@ Extensions ที่ติดตั้งอยู่และใช้งาน
 | [GitHub Actions](https://marketplace.visualstudio.com/items?itemName=github.vscode-github-actions) `github.vscode-github-actions` | 0.31.5 | ดู workflow run, trigger manual run, validate syntax ใน `.github/workflows/` |
 | [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens) `eamodio.gitlens` | 17.12.2 | Git blame inline, ดู commit history, เปรียบเทียบ branch |
 | [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) `redhat.vscode-yaml` | 1.22.0 | Syntax validation และ autocomplete สำหรับ `playwright.yml` |
-| [Bruno](https://marketplace.visualstudio.com/items?itemName=bruno-api-client.bruno) `bruno-api-client.bruno` | 5.0.0 | REST API client สำหรับทดสอบ endpoint ใน `http://localhost:8000/docs` ก่อนเขียน test |
+| [Bruno](https://marketplace.visualstudio.com/items?itemName=bruno-api-client.bruno) `bruno-api-client.bruno` | 5.0.0 | REST API client สำหรับทดสอบ endpoint ใน `http://127.0.0.1:8000/docs` ก่อนเขียน test |
 | [Cucumber](https://marketplace.visualstudio.com/items?itemName=cucumberopen.cucumber-official) `cucumberopen.cucumber-official` | 1.11.0 | Syntax highlighting สำหรับ BDD feature files (ถ้าขยายไปใช้ Gherkin ในอนาคต) |
 | [Rainbow CSV](https://marketplace.visualstudio.com/items?itemName=mechatroner.rainbow-csv) `mechatroner.rainbow-csv` | 3.24.1 | แสดงสี column ใน CSV สำหรับดู export test data |
 
@@ -73,8 +98,6 @@ code --install-extension mechatroner.rainbow-csv
 
 ### แนะนำให้ติดตั้งเพิ่ม
 
-Extensions ด้านล่างยังไม่ได้ติดตั้ง แต่ช่วยเพิ่มประสิทธิภาพการเขียน test script อย่างมีนัยสำคัญ:
-
 | Extension | ใช้ทำอะไร | ทำไมถึงจำเป็น |
 |-----------|-----------|--------------|
 | [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) `dbaeumer.vscode-eslint` | Lint TypeScript แบบ real-time | จับ error เช่น unused import, `await` ที่ลืมใส่ ก่อนรัน test |
@@ -84,7 +107,6 @@ Extensions ด้านล่างยังไม่ได้ติดตั้
 | [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) `mikestead.dotenv` | Syntax highlight ไฟล์ `.env` | อ่าน env config เช่น `BASE_URL` ได้ง่ายขึ้น |
 
 ```bash
-# ติดตั้งทั้ง 5 ตัวในคำสั่งเดียว
 code --install-extension dbaeumer.vscode-eslint
 code --install-extension esbenp.prettier-vscode
 code --install-extension usernamehw.errorlens
@@ -100,36 +122,62 @@ code --install-extension mikestead.dotenv
 testweb-e2e/
 ├── .github/
 │   └── workflows/
-│       └── playwright.yml          # CI/CD pipeline (E2E + k6 smoke)
+│       └── playwright.yml              # CI/CD pipeline (E2E + k6 smoke)
+├── allure-report/                      # Generated HTML report (gitignored)
+├── allure-results/                     # Raw Allure data from test run (gitignored)
 ├── docs/
-│   └── ShoesHub_Test_Cases.xlsx   # Test cases, test data, environments (source of truth)
+│   └── ShoesHub_Test_Cases.xlsx        # Test cases, test data, environments (source of truth)
 ├── fixtures/
-│   └── auth.fixture.ts            # Shared login fixtures (userPage, adminPage)
+│   └── auth.fixture.ts                 # Shared login fixtures (userPage, adminPage) + Allure auto-annotation
+├── globalSetup.ts                      # Restocks test products (id 2, 3) before every run
 ├── k6/
 │   ├── helpers/
-│   │   ├── auth.js                # k6 login helper + bearer header
-│   │   └── report.js              # HTML + text summary generator
-│   ├── reports/                   # HTML reports (gitignored — generated at runtime)
-│   ├── smoke.js                   # 2 VU, 1m — ตรวจสอบ critical flows
-│   ├── load.js                    # ramp 0→50 VU, 8m — normal traffic
-│   └── stress.js                  # ramp 0→200 VU, 10m — หา breaking point
+│   │   ├── auth.js                     # k6 login helper + bearer header
+│   │   └── report.js                   # HTML + text summary generator
+│   ├── reports/                        # HTML reports (gitignored)
+│   ├── smoke.js                        # 2 VU, 1m
+│   ├── load.js                         # ramp 0→50 VU, 8m
+│   └── stress.js                       # ramp 0→200 VU, 10m
 ├── pages/
-│   ├── LoginPage.ts               # Page Object Model สำหรับหน้า login
-│   └── CartPage.ts                # Page Object Model สำหรับหน้า cart
+│   ├── LoginPage.ts
+│   └── CartPage.ts
 ├── tests/
-│   ├── api/                       # API tests (Playwright APIRequestContext)
-│   │   ├── auth.api.spec.ts       # POST /api/auth/login, GET /api/auth/me
-│   │   ├── products.api.spec.ts   # GET /api/products, /api/products/:id
-│   │   ├── cart.api.spec.ts       # POST/GET/DELETE /api/cart
-│   │   ├── orders.api.spec.ts     # POST /api/orders, GET /api/orders/:id
-│   │   └── admin.api.spec.ts      # Admin endpoints (requires admin token)
-│   ├── auth/                      # E2E authentication tests
-│   │   └── TC_AUTH_001_login_success.spec.ts
-│   └── cart/                      # E2E cart tests
-│       └── TC_CART_001_add_to_cart.spec.ts
+│   ├── api/                            # API tests (Playwright APIRequestContext)
+│   │   ├── auth.api.spec.ts
+│   │   ├── products.api.spec.ts
+│   │   ├── cart.api.spec.ts
+│   │   ├── orders.api.spec.ts
+│   │   └── admin.api.spec.ts
+│   ├── auth/
+│   │   ├── TC_AUTH_001_login_success.spec.ts
+│   │   ├── TC_AUTH_002_register.spec.ts
+│   │   └── TC_AUTH_003_protected_routes.spec.ts
+│   ├── home/
+│   │   └── TC_HOME_001_homepage.spec.ts
+│   ├── products/
+│   │   ├── TC_PROD_001_product_list.spec.ts
+│   │   └── TC_DETAIL_001_product_detail.spec.ts
+│   ├── cart/
+│   │   ├── TC_CART_001_add_to_cart.spec.ts
+│   │   └── TC_CART_002_cart_management.spec.ts
+│   ├── checkout/
+│   │   └── TC_CHK_001_checkout.spec.ts
+│   ├── orders/
+│   │   └── TC_ORD_001_orders.spec.ts
+│   ├── profile/
+│   │   └── TC_PROF_001_profile.spec.ts
+│   ├── admin/
+│   │   ├── TC_DASH_001_dashboard.spec.ts
+│   │   ├── TC_APROD_001_admin_products.spec.ts
+│   │   └── TC_AORD_001_admin_orders.spec.ts
+│   ├── i18n/
+│   │   └── TC_I18N_001_language.spec.ts
+│   └── nav/
+│       └── TC_NAV_001_navigation.spec.ts
 ├── utils/
-│   ├── excelReader.ts             # อ่านข้อมูลจาก xlsx (test cases, data, environments)
-│   └── apiClient.ts               # API helper — loginAs(), bearer()
+│   ├── excelReader.ts                  # อ่านข้อมูลจาก xlsx
+│   ├── apiClient.ts                    # loginAs(), bearer()
+│   └── allure.ts                       # autoAnnotate() — ใส่ TC_ID + severity ใน Allure
 └── playwright.config.ts
 ```
 
@@ -142,6 +190,8 @@ testweb-e2e/
 ```bash
 npm test
 ```
+
+`globalSetup.ts` จะรันก่อนอัตโนมัติ — restock สินค้า id 2 และ 3 เพื่อป้องกัน "หมดสต็อก" จาก test run ก่อนหน้า
 
 ### รันแบบมี browser แสดง
 
@@ -164,26 +214,26 @@ npm run test:debug
 ### รัน test เฉพาะ module
 
 ```bash
-# E2E tests
 npx playwright test tests/auth/
 npx playwright test tests/cart/
-
-# API tests
+npx playwright test tests/checkout/
+npx playwright test tests/profile/
+npx playwright test tests/admin/
 npx playwright test tests/api/
-npx playwright test tests/api/auth.api.spec.ts
 ```
 
-### กรองด้วย tag
+### กรองด้วย grep
 
 ```bash
-npx playwright test --grep "TC_AUTH_001"
+npx playwright test --grep "TC-AUTH"
+npx playwright test --grep "P0"
 ```
 
 ---
 
 ## Environments
 
-ค่า default คือ `http://localhost:8000` (ต้องรัน ShoesHub server ก่อน)
+ค่า default คือ `http://127.0.0.1:8000` (ต้องรัน ShoesHub server ก่อน)
 
 ```bash
 # QA
@@ -196,18 +246,18 @@ npm run test:staging
 npm run test:prod
 
 # กำหนด URL เอง
-BASE_URL=http://localhost:3000 npx playwright test
+BASE_URL=http://127.0.0.1:3000 npx playwright test
 ```
 
 ---
 
 ## Test Data (xlsx)
 
-Test data ทั้งหมดอยู่ใน `docs/ShoesHub_Test_Cases.xlsx` มี 3 sheet ที่ใช้ใน automation:
+Test data ทั้งหมดอยู่ใน `docs/ShoesHub_Test_Cases.xlsx` มี 3 sheet:
 
 | Sheet | เนื้อหา |
 |-------|---------|
-| Test Cases | รายการ test case 78 รายการพร้อม steps, priority, expected result |
+| Test Cases | รายการ test case พร้อม steps, priority, expected result |
 | Test Data | Input data เช่น username, password, email |
 | Environments | Config URL และ credentials ต่อ environment |
 
@@ -216,47 +266,50 @@ Test data ทั้งหมดอยู่ใน `docs/ShoesHub_Test_Cases.xlsx
 ```ts
 import { getTestData, getTestCases, getCredentials, getEnvironment } from '../../utils/excelReader';
 
-// ดึง credentials ตาม TC Reference
 const { username, password } = getCredentials('TC-AUTH-05');
-
-// ดึง test data ทั้งหมด
-const allData = getTestData();
-
-// กรอง test cases เฉพาะ P0
 const smokeCases = getTestCases({ Priority: 'P0' });
-
-// ดึง config ของ environment
 const qa = getEnvironment('QA');
-console.log(qa['Base URL']); // https://shoeshub-qa.onrender.com
 ```
 
-### Title format ใน E2E tests
+### Title format
 
-Test name จะแสดง TC ID และ Priority จาก xlsx ให้เห็นใน report:
+Test name ดึง TC_ID และ Priority จาก xlsx ให้เห็นใน report ทุกตัว:
 
 ```
 [TC-AUTH-05][P0] เข้าสู่ระบบสำเร็จด้วย valid credentials
+[TC-CART-02][P1] ตะกร้ามีสินค้า
 ```
 
 ---
 
 ## Fixtures
 
-`fixtures/auth.fixture.ts` เตรียม browser session ที่ login อยู่แล้วให้ใช้ใน test ได้เลย
+`fixtures/auth.fixture.ts` เตรียม browser session ที่ login ไว้แล้ว และ **ใส่ TC_ID + severity annotation ใน Allure อัตโนมัติ** จากชื่อ test
 
 ```ts
 import { test, expect } from '../../fixtures/auth.fixture';
 
-// userPage — login เป็น testuser (TC-AUTH-05 จาก xlsx)
 test('example', async ({ userPage }) => {
   await userPage.goto('/products.html');
 });
 
-// adminPage — login เป็น admin (TC-AUTH-06 จาก xlsx)
 test('admin example', async ({ adminPage }) => {
   await adminPage.goto('/admin.html');
 });
 ```
+
+---
+
+## Global Setup
+
+`globalSetup.ts` รันก่อนทุก test run โดยอัตโนมัติ — login เป็น admin แล้ว restore ข้อมูล seed สินค้าที่ใช้ใน test:
+
+| Product | Name | Brand | Stock |
+|---------|------|-------|-------|
+| id: 2 | Adidas Ultraboost 23 | Adidas | 999 |
+| id: 3 | New Balance 990v6 | New Balance | 999 |
+
+สาเหตุที่ต้องมี: checkout tests ลด stock จริงทุกครั้งที่ place order สำเร็จ — หาก stock เป็น 0 ปุ่ม Add to Cart จะ disabled และ tests ที่เกี่ยวกับสินค้าจะ fail
 
 ---
 
@@ -265,30 +318,52 @@ test('admin example', async ({ adminPage }) => {
 ### Playwright HTML Report
 
 ```bash
-# เปิด HTML report หลังรัน test
 npm run report
 ```
 
-Report อยู่ที่ `playwright-report/index.html` — แสดง test name พร้อม `[TC_ID][Priority]`, steps BDD, screenshot เมื่อ fail
+Report อยู่ที่ `playwright-report/index.html` — แสดง test name พร้อม `[TC_ID][Priority]`, steps BDD, screenshot และ video เมื่อ fail
+
+### Allure Report
+
+Allure แสดง dashboard พร้อม trend, severity breakdown, TC_ID label, steps, screenshot และ trace
+
+```bash
+# 1. รัน test (สร้าง allure-results/ อัตโนมัติ)
+npm test
+
+# 2. Generate HTML report จาก allure-results/
+npm run report:allure
+
+# 3. เปิด report ผ่าน HTTP server (ต้อง serve ผ่าน HTTP — เปิด file:// โดยตรงไม่ได้)
+npm run report:allure:open
+# → เปิดที่ http://localhost:8080
+
+# หรือ generate + open ในคำสั่งเดียว
+npm run report:allure:serve
+```
+
+> **สำคัญ:** เปิด `allure-report/index.html` โดยตรงด้วย `file://` จะค้างที่หน้า Loading เพราะเบราว์เซอร์บล็อก fetch request — ต้อง serve ผ่าน HTTP เสมอ
+
+#### Allure Labels ที่ใส่อัตโนมัติ
+
+| Label | มาจาก | ตัวอย่าง |
+|-------|--------|---------|
+| `TC_ID` | title pattern `[TC-XXX-YY]` | `TC-AUTH-05` |
+| `severity` | priority `[P0]`–`[P3]` | `blocker` / `critical` / `normal` / `minor` |
+
+ระบบ auto-annotate ผ่าน `utils/allure.ts` → `autoAnnotate()` ซึ่งถูกเรียกใน:
+- `fixtures/auth.fixture.ts` — ครอบคลุม tests ที่ใช้ `userPage` / `adminPage`
+- `test.beforeEach()` ใน spec files ที่ใช้ plain `page`
 
 ### k6 Performance Report
 
-HTML report จะถูกสร้างอัตโนมัติหลังรัน k6 script ใดก็ตาม:
+HTML report สร้างอัตโนมัติหลังรัน k6:
 
 | Script | Output |
 |--------|--------|
 | `perf:smoke` | `k6/reports/smoke-report.html` |
 | `perf:load` | `k6/reports/load-report.html` |
 | `perf:stress` | `k6/reports/stress-report.html` |
-
-```bash
-# เปิด report หลังรัน smoke
-start k6/reports/smoke-report.html       # Windows
-open k6/reports/smoke-report.html        # macOS
-```
-
-> รายงาน k6 อยู่ใน `k6/reports/` ซึ่ง gitignore ไว้ — ไม่ถูก commit ขึ้น repo  
-> บน CI/CD รายงานจะถูก upload เป็น GitHub Actions artifact อัตโนมัติ
 
 ---
 
@@ -301,11 +376,11 @@ k6/
 ├── helpers/
 │   ├── auth.js          # login() + authHeaders() + BASE_URL
 │   └── report.js        # summary() → HTML + stdout text
-├── smoke.js             # 2 VU, 1m — ตรวจสอบ critical flows ทุกตัว
+├── smoke.js             # 2 VU, 1m — ตรวจสอบ critical flows
 ├── load.js              # ramp 0→50 VU, 8m — normal traffic simulation
 ├── stress.js            # ramp 0→200 VU, 10m — หา breaking point
 ├── scenarios.js         # Scenario-based: 3 กลุ่มผู้ใช้รันพร้อมกัน
-└── transactions.js      # Transaction-based: user journey end-to-end พร้อม custom metrics
+└── transactions.js      # Transaction-based: user journey end-to-end
 ```
 
 ### SLO (Thresholds)
@@ -321,129 +396,19 @@ k6/
 ### รัน performance test
 
 ```bash
-# Smoke — รันก่อน load/stress เสมอ (1 นาที)
-npm run perf:smoke
-
-# Load — normal traffic 50 VU (8 นาที)
-npm run perf:load
-
-# Stress — หา breaking point 200 VU (10 นาที)
-npm run perf:stress
-
-# Scenario-based — 3 กลุ่มผู้ใช้รันพร้อมกัน (~9 นาที)
-npm run perf:scenario
-
-# Transaction-based — วัด end-to-end user journey (5 นาที)
-npm run perf:transaction
-
-# Smoke บน QA environment
-npm run perf:smoke:qa
-
-# กำหนด BASE_URL เอง
-BASE_URL=https://shoeshub-staging.onrender.com k6 run k6/load.js
+npm run perf:smoke       # Smoke — 2 VU, 1 นาที
+npm run perf:load        # Load — 50 VU, 8 นาที
+npm run perf:stress      # Stress — 200 VU, 10 นาที
+npm run perf:scenario    # Scenario-based — 3 groups, ~9 นาที
+npm run perf:transaction # Transaction-based — user journey, 5 นาที
+npm run perf:smoke:qa    # Smoke บน QA environment
 ```
 
-> **หมายเหตุ:** อย่ารัน load/stress บน production — ใช้ DEV หรือ staging เท่านั้น
-
----
-
-## Scenario-Based Testing
-
-`k6/scenarios.js` จำลองพฤติกรรมผู้ใช้หลายกลุ่มที่รันพร้อมกัน แทนที่จะ ramp VU เป็นตัวเลขเดียว
-
-### Timeline
-
-```
-0m ──────────────────────────────────── 9m
-│
-├─ [browse_anonymous]    0m ──────────── 9m   ramping-vus (0→40→40→0)
-├─ [returning_customer]      1m ──────── 9m   constant-vus (15 VU)
-└─ [checkout_burst]              4m ── 7m     ramping-arrival-rate (spike)
-```
-
-### Executor Types
-
-| Executor | ควบคุม | เหมาะกับ |
-|----------|--------|----------|
-| `ramping-vus` | จำนวน VU (คน) | Traffic ที่ค่อย ๆ เพิ่มแบบปกติ |
-| `constant-vus` | จำนวน VU คงที่ | Steady-state load ของกลุ่มผู้ใช้ที่ active |
-| `ramping-arrival-rate` | Request/วินาที (RPS) | Flash sale, spike event — rate คงที่แม้ backend ช้า |
-
-### Scenario Functions
-
-| Function | Scenario | พฤติกรรม |
-|----------|----------|----------|
-| `browseAnonymous` | `browse_anonymous` | List → Search → Product detail (ไม่ login) |
-| `authenticatedShopper` | `returning_customer` | Me → Categories → Detail → Add cart (50%) |
-| `checkoutFlow` | `checkout_burst` | Clear → Add → Place order ทันที |
-
-### Thresholds แยกต่อ Scenario
-
-```js
-'http_req_duration{scenario:browse_anonymous}':   ['p(95)<400'],   // เร็วสุด
-'http_req_duration{scenario:returning_customer}': ['p(95)<800'],   // มี auth overhead
-'http_req_duration{scenario:checkout_burst}':     ['p(95)<3000'],  // ยืดหยุ่นในช่วง spike
-'http_req_failed{scenario:checkout_burst}':       ['rate<0.10'],   // error budget สูงกว่า
-```
-
----
-
-## Transaction-Based Testing
-
-`k6/transactions.js` จำลอง user journey ที่ API รันต่อกันเป็นลำดับ — เหมือน JMeter Transaction Controller
-
-### JMeter vs k6
-
-| JMeter | k6 |
-|--------|----|
-| Transaction Controller | `group()` + custom `Trend` metric |
-| Sampler | `http.get()` / `http.post()` |
-| Assertion | `check()` |
-| Regular Expression Extractor | `res.json('field')` |
-| If Controller | `if/else` ธรรมดา |
-| Pre/Post Processor | code ก่อน/หลัง request |
-
-### User Journeys (3 แบบ)
-
-```
-Traffic แบ่งตามพฤติกรรมจริง:
-
-  60% → TX Browse Only       list → search → detail (ไม่ login)
-  25% → TX Add Cart Only     login → browse → add cart → ออก (cart abandonment)
-  15% → TX Full Purchase     login → browse → add cart → checkout → confirm order
-```
-
-### Custom Metrics
-
-| Metric | วัดอะไร |
-|--------|---------|
-| `tx_full_purchase_ms` | เวลาทั้ง flow ตั้งแต่ login จน order confirm |
-| `tx_checkout_only_ms` | เวลาเฉพาะ place order |
-| `tx_success_rate` | % ของ transaction ที่สำเร็จครบทุก step |
-| `tx_success` / `tx_fail` | นับจำนวน transaction |
-
-### Data Flow ระหว่าง Steps
-
-ใน k6 response ของ step หนึ่งส่งต่อ step ถัดไปได้เลย ไม่ต้อง extractor แยก:
-
-```js
-// Step 1: Login — ได้ token
-var loginRes = http.post('/api/auth/login', ...);
-var token = loginRes.json('access_token');   // ← ดึงตรงจาก response
-
-// Step 6: Place Order — ได้ order id
-var order = http.post('/api/orders', ..., { headers: { Authorization: 'Bearer ' + token } });
-var orderId = order.json('id');              // ← ใช้ต่อใน step 7 ได้เลย
-
-// Step 7: Confirm Order
-var confirm = http.get('/api/orders/' + orderId, ...);
-```
+> **หมายเหตุ:** อย่ารัน load/stress บน production
 
 ---
 
 ## CI/CD (GitHub Actions)
-
-Pipeline มี 2 job ที่รันต่อกัน:
 
 ```
 push / PR to main
@@ -477,4 +442,4 @@ push / PR to main
 | User | `testuser` | `test1234` |
 | Admin | `admin` | `admin1234` |
 
-> Credentials เหล่านี้มาจาก sheet Test Data ใน xlsx — อย่าแก้ในโค้ดโดยตรง
+> Credentials มาจาก sheet Test Data ใน xlsx — อย่าแก้ในโค้ดโดยตรง

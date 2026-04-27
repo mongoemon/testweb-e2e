@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { getTestCases, getTestData } from '../../utils/excelReader';
+import { autoAnnotate } from '../../utils/allure';
 
 const cases   = getTestCases({ Module: 'Authentication' });
 const allData = getTestData();
@@ -20,6 +21,7 @@ function td(dataSetId: string) {
 }
 
 test.describe('Authentication — Register', () => {
+  test.beforeEach(async ({}, testInfo) => { await autoAnnotate(testInfo); });
 
   test(title('TC-AUTH-01'), async ({ page }) => {
     // username ต้องไม่ซ้ำ — ใส่ timestamp เพื่อให้ unique ทุกครั้งที่รัน
