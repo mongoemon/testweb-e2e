@@ -34,6 +34,7 @@ test.describe('Admin — Orders Management', () => {
       const select = adminPage.locator('[data-testid="status-filter-select"]');
       await expect(select).toBeVisible();
       await select.selectOption({ index: 1 });
+      await adminPage.waitForLoadState('networkidle');
     });
 
     await test.step('Then: แสดง order-row ที่ตรงกับ status หรือ no-orders', async () => {
@@ -81,6 +82,7 @@ test.describe('Admin — Orders Management', () => {
       const options = await select.locator('option').allTextContents();
       // Try the last option — most likely to be empty
       await select.selectOption({ index: options.length - 1 });
+      await adminPage.waitForLoadState('networkidle');
     });
 
     await test.step('Then: แสดง no-orders หรือ order-row ตามจริง', async () => {

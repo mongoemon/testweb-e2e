@@ -28,6 +28,9 @@ test('TC_CART_003 remove item from cart decreases item count', async ({ userPage
   await userPage.locator('[data-testid="size-option"]').first().click();
   await userPage.click('[data-testid="add-to-cart-btn"]');
 
+  // Wait for cart to reflect the added item before navigating
+  await expect(userPage.locator('[data-testid="cart-count"]')).not.toHaveText('0');
+
   // Go to cart and remove
   await userPage.goto('/cart.html');
   const initialCount = await userPage.locator('[data-testid="cart-item"]').count();

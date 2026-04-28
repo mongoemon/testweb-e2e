@@ -109,6 +109,7 @@ test.describe('Cart — Cart Management', () => {
     });
 
     await test.step('When: คลิก clear-cart-btn', async () => {
+      userPage.once('dialog', dialog => dialog.accept());
       await userPage.click('[data-testid="clear-cart-btn"]');
     });
 

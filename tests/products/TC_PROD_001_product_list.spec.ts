@@ -114,11 +114,12 @@ test.describe('Products — Product List', () => {
     });
 
     await test.step('When: เลือก Sort "ราคา: ต่ำ→สูง" จาก filter-sort แล้วกด search', async () => {
+      const responsePromise = page.waitForResponse(
+        res => res.url().includes('/api/products') && res.status() === 200
+      );
       await page.selectOption('[data-testid="filter-sort"]', 'price_asc');
-      await Promise.all([
-        page.waitForResponse(res => res.url().includes('/api/products') && res.status() === 200),
-        page.click('[data-testid="search-btn"]'),
-      ]);
+      await page.click('[data-testid="search-btn"]');
+      await responsePromise;
     });
 
     await test.step('Then: สินค้าเรียงราคาจากน้อยไปมาก', async () => {
