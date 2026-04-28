@@ -282,6 +282,37 @@ Test name ดึง TC_ID และ Priority จาก xlsx ให้เห็�
 
 ---
 
+## Maintaining the xlsx
+
+### Restore formatting
+
+ถ้า formatting ใน `docs/ShoesHub_Test_Cases.xlsx` หายหลังจาก save ด้วย openpyxl หรือเปิด-ปิดด้วยโปรแกรมอื่น — รัน:
+
+```bash
+python scripts/format_xlsx.py
+```
+
+หรือ double-click `restore_xlsx_format.bat` (Windows) จาก root ของ repo
+
+> Script นี้ idempotent — รันซ้ำกี่ครั้งก็ได้ ไม่แตะ cell value เลย เปลี่ยนแค่ style
+
+### อัปเดตข้อมูลด้วย script
+
+ใช้ `scripts/update_xlsx.py` สำหรับ update ข้อมูลโดยไม่ทำลาย formatting:
+
+```bash
+# อัปเดต Automation Status
+python scripts/update_xlsx.py status TC-AUTH-01 Automated tests/auth/TC_AUTH_001.spec.ts
+
+# เพิ่ม Test Run Log entry
+python scripts/update_xlsx.py log RUN-001 TC-AUTH-01 Pass
+```
+
+**กฎสำคัญ:** ถ้าเขียน script เองเพื่ออัปเดต xlsx ให้แก้เฉพาะ `cell.value` ห้ามแตะ `.fill/.font/.alignment/.border`
+ถ้าเพิ่ม row ใหม่ ให้รัน `python scripts/format_xlsx.py` ตามหลัง
+
+---
+
 ## Fixtures
 
 `fixtures/auth.fixture.ts` เตรียม browser session ที่ login ไว้แล้ว และ **ใส่ TC_ID + severity annotation ใน Allure อัตโนมัติ** จากชื่อ test
