@@ -18,7 +18,6 @@ env:
   BASE_URL_qa:      https://shoeshub-qa.onrender.com
   BASE_URL_staging: https://shoeshub-staging.onrender.com
   BASE_URL_prod:    https://shoeshub-prod.onrender.com
-  # แก้ warning: force actions/checkout, setup-node, upload-artifact ใช้ Node 24 runtime
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -26,6 +25,8 @@ jobs:
     name: E2E Tests — ${{ github.event.inputs.environment || 'qa' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write   # required for gh-pages deployment
 
     steps:
       - name: Checkout
@@ -43,8 +44,6 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      # Render.com free tier จะนอนหลับเมื่อไม่มี traffic
-      # ส่ง request ปลุกแล้วรอ max 90s ให้ server ready
       - name: Wake up server
         run: |
           TARGET="${BASE_URL}"
@@ -64,17 +63,58 @@ jobs:
           BASE_URL: ${{ env[format('BASE_URL_{0}', github.event.inputs.environment || 'qa')] }}
 
       - name: Run tests
-        run: npx playwright test --reporter=github,html
+        run: npx playwright test --reporter=github,html,allure-playwright
         env:
           BASE_URL: ${{ env[format('BASE_URL_{0}', github.event.inputs.environment || 'qa')] }}
 
-      - name: Upload HTML report
+      - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report-${{ github.event.inputs.environment || 'qa' }}-${{ github.run_number }}
           path: playwright-report/
           retention-days: 30
+
+      # ── Allure: restore history → generate → deploy ──────────────────────────
+
+      - name: Restore Allure history from gh-pages
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy history into allure-results
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -d gh-pages/history ]; then
+            cp -r gh-pages/history allure-results/history
+            echo "Loaded history ($(ls gh-pages/history | wc -l) files)"
+          else
+            echo "No previous history — this is the first run"
+          fi
+
+      - name: Generate Allure report
+        if: always()
+        run: npx allure generate allure-results --clean -o allure-report
+
+      - name: Upload Allure report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report-${{ github.event.inputs.environment || 'qa' }}-${{ github.run_number }}
+          path: allure-report/
+          retention-days: 30
+
+      - name: Deploy Allure report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: always() && github.event_name != 'pull_request'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
 
   k6-smoke:
     name: k6 Smoke Test — ${{ github.event.inputs.environment || 'qa' }}
