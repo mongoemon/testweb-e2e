@@ -1,0 +1,58 @@
+# k6 + InfluxDB + Grafana — local performance dashboard stack
+#
+# Usage:
+#   cd k6/grafana
+#   docker compose up -d
+#   # then from repo root:
+#   npm run perf:load:dash
+#
+# Grafana:  http://localhost:3001  (anonymous admin for viewing; admin / admin for API + MCP)
+# InfluxDB: http://localhost:8086  (db: k6)
+#
+# The k6 dashboard (grafana.com ID 2587) and its datasource are provisioned
+# automatically from ./provisioning — no manual import needed.
+
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: k6-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_DB: k6
+      INFLUXDB_HTTP_MAX_BODY_SIZE: 0
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: k6-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_BASIC_ENABLED: "true"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_DEFAULT_THEME: light
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+      - renderer
+
+  # Renders panels/dashboards to PNG — used by "Share > Export as image"
+  # and by the Grafana MCP get_panel_image tool.
+  renderer:
+    image: grafana/grafana-image-renderer:3.11.6
+    container_name: k6-grafana-renderer
+    environment:
+      ENABLE_METRICS: "false"
+
+volumes:
+  influxdb-data:
+  grafana-data:

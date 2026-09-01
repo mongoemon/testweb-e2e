@@ -1,6 +1,6 @@
 # ShoesHub E2E Test Suite
 
-Playwright E2E + API tests สำหรับ [ShoesHub](http://127.0.0.1:8000) — ครอบคลุม Authentication, Cart, Checkout, Products, Orders, Profile, Admin และ i18n พร้อม Allure Report และ k6 Performance Testing
+Playwright E2E + API tests สำหรับ [ShoesHub](http://127.0.0.1:8000) — ครอบคลุม Authentication, Cart, Checkout, Products, Orders, Profile, Admin และ i18n พร้อม Allure Report และ k6 Performance Testing (มี Grafana dashboard สดให้ดูผล)
 
 **100 test cases** across 10 modules (E2E + API)
 
@@ -14,6 +14,7 @@ Playwright E2E + API tests สำหรับ [ShoesHub](http://127.0.0.1:8000) 
 | npm | 9+ |
 | Java | 11+ (สำหรับ Allure CLI) |
 | k6 | 0.49+ (สำหรับ performance test) |
+| Docker | (ไม่บังคับ) สำหรับ Grafana dashboard สด — ดู [Live Dashboard (Grafana)](#live-dashboard-grafana) |
 
 > **Windows 11 note:** ใช้ `http://127.0.0.1:8000` เสมอ — `localhost` บน Windows 11 resolve เป็น IPv6 `::1` ซึ่งอาจชี้ไปยัง server ที่ผิด
 
@@ -133,11 +134,18 @@ testweb-e2e/
 ├── k6/
 │   ├── helpers/
 │   │   ├── auth.js                     # k6 login helper + bearer header
+│   │   ├── admin.js                    # restock / cleanup helpers
 │   │   └── report.js                   # HTML + text summary generator
 │   ├── reports/                        # HTML reports (gitignored)
+│   ├── grafana/                        # Live dashboard stack (Docker: InfluxDB + Grafana)
+│   │   ├── docker-compose.yml          # influxdb + grafana + image-renderer
+│   │   ├── provisioning/               # auto-loads datasource + dashboard 2587
+│   │   └── README.md                   # setup + Grafana MCP guide
 │   ├── smoke.js                        # 2 VU, 1m
 │   ├── load.js                         # ramp 0→50 VU, 8m
-│   └── stress.js                       # ramp 0→200 VU, 10m
+│   ├── stress.js                       # ramp 0→200 VU, 10m
+│   ├── scenarios.js                    # Scenario-based: 3 user groups
+│   └── transactions.js                # Transaction-based: user journey
 ├── pages/
 │   ├── LoginPage.ts
 │   └── CartPage.ts
@@ -442,13 +450,18 @@ use: {
 
 ### k6 Performance Report
 
-HTML report สร้างอัตโนมัติหลังรัน k6:
+**2 ทางเลือกในการดูผล:**
+
+**1. HTML report** — สร้างอัตโนมัติหลังรัน k6 (ไม่ต้องมี Docker):
 
 | Script | Output |
 |--------|--------|
 | `perf:smoke` | `k6/reports/smoke-report.html` |
 | `perf:load` | `k6/reports/load-report.html` |
 | `perf:stress` | `k6/reports/stress-report.html` |
+
+**2. Grafana dashboard สด** — ดูกราฟ real-time ระหว่างเทสต์รัน
+ดูวิธีทำที่ [Live Dashboard (Grafana)](#live-dashboard-grafana) ด้านล่าง
 
 ---
 
@@ -490,6 +503,49 @@ npm run perf:smoke:qa    # Smoke บน QA environment
 ```
 
 > **หมายเหตุ:** อย่ารัน load/stress บน production
+
+### Live Dashboard (Grafana)
+
+ดูผล k6 เป็นกราฟ real-time ผ่าน Grafana ได้ — stack เป็น Docker (InfluxDB + Grafana + image-renderer)
+พร้อม dashboard และ datasource ที่ provision ไว้ให้อัตโนมัติ **ไม่ต้อง import เอง**
+
+```bash
+# 1. สตาร์ท InfluxDB + Grafana (ครั้งเดียว, ต้องมี Docker)
+npm run grafana:up
+
+# 2. รันเทสต์แบบส่งข้อมูลเข้า Grafana (เติม --out influxdb ให้อัตโนมัติ)
+npm run perf:smoke:dash
+npm run perf:load:dash
+npm run perf:stress:dash
+npm run perf:scenario:dash
+npm run perf:transaction:dash
+
+# 3. เปิด dashboard
+#    http://localhost:3001  →  Dashboards  →  โฟลเดอร์ k6  →  "k6 Load Testing Results"
+#    ตั้ง time range = Last 5 minutes, auto-refresh 5s → กราฟวิ่งระหว่างเทสต์รัน
+
+# 4. หยุด
+npm run grafana:down                 # เก็บข้อมูลไว้
+# docker compose -f k6/grafana/docker-compose.yml down -v   # ลบข้อมูลด้วย
+```
+
+| Service | URL | หมายเหตุ |
+|---------|-----|----------|
+| Grafana | http://localhost:3001 | เข้าได้เลย (anonymous admin) / `admin` `admin` สำหรับ API |
+| InfluxDB | http://localhost:8086 | database `k6` |
+
+ยิงไป environment อื่น:
+
+```bash
+# PowerShell
+$env:BASE_URL="https://shoeshub-qa.onrender.com"; npm run perf:load:dash
+```
+
+**Grafana MCP** — `.mcp.json` ที่ root ลงทะเบียน server `mcp/grafana` ไว้แล้ว
+หลัง `npm run grafana:up` ให้ reload MCP ใน Claude Code (`/mcp`) แล้วสั่งงานได้ เช่น
+*"render k6 dashboard เป็นรูป"* หรือ *"import grafana.com dashboard 19665"*
+
+รายละเอียดเต็ม (provisioning, service-account token, การเพิ่ม dashboard): [`k6/grafana/README.md`](k6/grafana/README.md)
 
 ---
 

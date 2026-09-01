@@ -8,3 +8,5 @@ k6/reports/
 .env
 .env.*
 !.env.example
+hs_err_pid*.log
+jmeter.log

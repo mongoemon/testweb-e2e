@@ -1,0 +1,12 @@
+# Auto-provisions the InfluxDB datasource k6 writes to.
+# Consumed by Grafana on container start (mounted at /etc/grafana/provisioning).
+apiVersion: 1
+
+datasources:
+  - name: k6-influxdb
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: k6
+    isDefault: true
+    editable: true

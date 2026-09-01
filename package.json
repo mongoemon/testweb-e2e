@@ -19,7 +19,14 @@
     "perf:stress": "k6 run k6/stress.js",
     "perf:smoke:qa": "cross-env BASE_URL=https://shoeshub-qa.onrender.com k6 run k6/smoke.js",
     "perf:scenario": "k6 run k6/scenarios.js",
-    "perf:transaction": "k6 run k6/transactions.js"
+    "perf:transaction": "k6 run k6/transactions.js",
+    "grafana:up": "docker compose -f k6/grafana/docker-compose.yml up -d",
+    "grafana:down": "docker compose -f k6/grafana/docker-compose.yml down",
+    "perf:smoke:dash": "k6 run --out influxdb=http://localhost:8086/k6 k6/smoke.js",
+    "perf:load:dash": "k6 run --out influxdb=http://localhost:8086/k6 k6/load.js",
+    "perf:stress:dash": "k6 run --out influxdb=http://localhost:8086/k6 k6/stress.js",
+    "perf:scenario:dash": "k6 run --out influxdb=http://localhost:8086/k6 k6/scenarios.js",
+    "perf:transaction:dash": "k6 run --out influxdb=http://localhost:8086/k6 k6/transactions.js"
   },
   "keywords": [],
   "author": "",
