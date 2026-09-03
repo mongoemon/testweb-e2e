@@ -111,6 +111,12 @@ test.describe('Admin — Orders Management', () => {
     });
 
     await test.step('Then: orders-table แสดง order-row พร้อม order detail', async () => {
+      // Wait for the table to render before counting. count() does not
+      // auto-wait, so an early read reports zero rows and this test then
+      // asserts the empty state on a page that does have orders.
+      await expect(
+        adminPage.locator('[data-testid="order-row"], [data-testid="no-orders"]').first(),
+      ).toBeVisible();
       const count = await adminPage.locator('[data-testid="order-row"]').count();
       if (count > 0) {
         const firstRow = adminPage.locator('[data-testid="order-row"]').first();
