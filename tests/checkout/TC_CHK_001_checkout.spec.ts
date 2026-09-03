@@ -14,15 +14,19 @@ function title(id: string) {
 }
 
 async function addProductAndGoToCheckout(page: any) {
-  // Clear cart first to avoid parallel-test state conflicts
-  await page.goto('/cart.html');
-  const clearBtn = page.locator('[data-testid="clear-cart-btn"]');
-  if (await clearBtn.isVisible()) await clearBtn.click();
-
+  // No clear-cart step: each worker now has its own account, so there is no
+  // shared cart to reset. The old clear also relied on a confirm dialog that
+  // Playwright auto-dismisses, so it never actually cleared anything.
   await page.goto('/product.html?id=2');
   await expect(page.locator('[data-testid="size-option"]').first()).toBeVisible();
   await page.locator('[data-testid="size-option"]').first().click();
   await page.click('[data-testid="add-to-cart-btn"]');
+
+  // Wait for the badge to reflect the add before navigating. goto() cancels the
+  // in-flight POST, so without this the cart renders empty on a slow environment
+  // and checkout-btn never appears — the failure this file hits on CI.
+  await expect(page.locator('[data-testid="cart-count"]')).not.toHaveText('0');
+
   await page.goto('/cart.html');
   await expect(page.locator('[data-testid="checkout-btn"]')).toBeVisible();
   await page.click('[data-testid="checkout-btn"]');

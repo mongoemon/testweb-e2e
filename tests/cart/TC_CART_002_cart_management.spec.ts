@@ -28,6 +28,12 @@ test.describe('Cart — Cart Management', () => {
     });
 
     await test.step('Then: แสดง empty-cart และไม่มี cart-item', async () => {
+      // Let the cart finish rendering first. count() does not auto-wait, so
+      // reading it too early reports zero items and sends this test down the
+      // wrong branch.
+      await expect(
+        cartPage.locator('[data-testid="empty-cart"], [data-testid="cart-item"]').first(),
+      ).toBeVisible();
       const hasEmpty = await cartPage.locator('[data-testid="empty-cart"]').count();
       const hasItems = await cartPage.locator('[data-testid="cart-item"]').count();
       if (hasItems === 0) {
