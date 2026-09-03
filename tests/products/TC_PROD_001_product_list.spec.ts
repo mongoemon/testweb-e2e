@@ -171,6 +171,12 @@ test.describe('Products — Product List', () => {
     });
 
     await test.step('Then: แสดงผลลัพธ์ที่ตรงกับทุกเงื่อนไข (หรือ empty-state)', async () => {
+      // The response has arrived but the list re-renders after it. count() does
+      // not auto-wait, so both reads below return zero and the sum assertion
+      // fails on a page that is about to render correctly.
+      await expect(
+        page.locator('[data-testid="product-card"], [data-testid="empty-state"]').first(),
+      ).toBeVisible();
       const hasCards = await page.locator('[data-testid="product-card"]').count();
       const hasEmpty = await page.locator('[data-testid="empty-state"]').count();
       expect(hasCards + hasEmpty).toBeGreaterThan(0);

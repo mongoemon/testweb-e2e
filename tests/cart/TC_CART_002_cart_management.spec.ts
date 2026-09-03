@@ -22,16 +22,22 @@ async function addProductToCart(page: any) {
 
 test.describe('Cart — Cart Management', () => {
 
-  test(title('TC-CART-01'), async ({ userPage }) => {
+  test(title('TC-CART-01'), async ({ cartPage }) => {
     await test.step('Given: เข้า /cart.html โดยไม่มีสินค้าใน cart', async () => {
-      await userPage.goto('/cart.html');
+      await cartPage.goto('/cart.html');
     });
 
     await test.step('Then: แสดง empty-cart และไม่มี cart-item', async () => {
-      const hasEmpty = await userPage.locator('[data-testid="empty-cart"]').count();
-      const hasItems = await userPage.locator('[data-testid="cart-item"]').count();
+      // Let the cart finish rendering first. count() does not auto-wait, so
+      // reading it too early reports zero items and sends this test down the
+      // wrong branch.
+      await expect(
+        cartPage.locator('[data-testid="empty-cart"], [data-testid="cart-item"]').first(),
+      ).toBeVisible();
+      const hasEmpty = await cartPage.locator('[data-testid="empty-cart"]').count();
+      const hasItems = await cartPage.locator('[data-testid="cart-item"]').count();
       if (hasItems === 0) {
-        await expect(userPage.locator('[data-testid="empty-cart"]')).toBeVisible();
+        await expect(cartPage.locator('[data-testid="empty-cart"]')).toBeVisible();
       } else {
         // cart has items from previous tests — acceptable
         expect(hasItems + hasEmpty).toBeGreaterThan(0);
@@ -39,99 +45,99 @@ test.describe('Cart — Cart Management', () => {
     });
   });
 
-  test(title('TC-CART-02'), async ({ userPage }) => {
+  test(title('TC-CART-02'), async ({ cartPage }) => {
     await test.step('Given: เพิ่มสินค้าเข้า cart', async () => {
-      await addProductToCart(userPage);
+      await addProductToCart(cartPage);
     });
 
     await test.step('When: เปิด /cart.html', async () => {
-      await userPage.goto('/cart.html');
+      await cartPage.goto('/cart.html');
     });
 
     await test.step('Then: แสดง cart-item และ cart-total', async () => {
-      await expect(userPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
-      await expect(userPage.locator('[data-testid="cart-total"]')).toBeVisible();
+      await expect(cartPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
+      await expect(cartPage.locator('[data-testid="cart-total"]')).toBeVisible();
     });
   });
 
-  test(title('TC-CART-03'), async ({ userPage }) => {
+  test(title('TC-CART-03'), async ({ cartPage }) => {
     await test.step('Given: มีสินค้าใน cart', async () => {
-      await addProductToCart(userPage);
-      await userPage.goto('/cart.html');
-      await expect(userPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
+      await addProductToCart(cartPage);
+      await cartPage.goto('/cart.html');
+      await expect(cartPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
     });
 
     await test.step('When: คลิก qty-increase บนรายการแรก', async () => {
-      const firstItem = userPage.locator('[data-testid="cart-item"]').first();
+      const firstItem = cartPage.locator('[data-testid="cart-item"]').first();
       const itemId = await firstItem.getAttribute('data-id');
       if (itemId) {
-        await userPage.click(`[data-testid="qty-increase-${itemId}"]`);
+        await cartPage.click(`[data-testid="qty-increase-${itemId}"]`);
       } else {
-        await userPage.locator('[data-testid^="qty-increase"]').first().click();
+        await cartPage.locator('[data-testid^="qty-increase"]').first().click();
       }
     });
 
     await test.step('Then: quantity เพิ่มขึ้น และ cart-total เปลี่ยนแปลง', async () => {
-      await expect(userPage.locator('[data-testid="cart-total"]')).toBeVisible();
+      await expect(cartPage.locator('[data-testid="cart-total"]')).toBeVisible();
     });
   });
 
-  test(title('TC-CART-04'), async ({ userPage }) => {
+  test(title('TC-CART-04'), async ({ cartPage }) => {
     await test.step('Given: มีสินค้าใน cart', async () => {
-      await addProductToCart(userPage);
-      await userPage.goto('/cart.html');
-      await expect(userPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
+      await addProductToCart(cartPage);
+      await cartPage.goto('/cart.html');
+      await expect(cartPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
     });
 
     await test.step('When: ลบสินค้าออกจาก cart (remove-item หรือ cart-remove)', async () => {
-      const count = await userPage.locator('[data-testid="cart-item"]').count();
-      const firstItem = userPage.locator('[data-testid="cart-item"]').first();
+      const count = await cartPage.locator('[data-testid="cart-item"]').count();
+      const firstItem = cartPage.locator('[data-testid="cart-item"]').first();
       const itemId = await firstItem.getAttribute('data-id');
       if (itemId) {
-        await userPage.click(`[data-testid="remove-item-${itemId}"]`);
+        await cartPage.click(`[data-testid="remove-item-${itemId}"]`);
       } else {
-        await userPage.locator('[data-testid^="remove-item"], [data-testid="cart-remove"]').first().click();
+        await cartPage.locator('[data-testid^="remove-item"], [data-testid="cart-remove"]').first().click();
       }
       if (count === 1) {
-        await expect(userPage.locator('[data-testid="empty-cart"]')).toBeVisible();
+        await expect(cartPage.locator('[data-testid="empty-cart"]')).toBeVisible();
       } else {
-        const newCount = await userPage.locator('[data-testid="cart-item"]').count();
+        const newCount = await cartPage.locator('[data-testid="cart-item"]').count();
         expect(newCount).toBeLessThan(count);
       }
     });
   });
 
-  test(title('TC-CART-05'), async ({ userPage }) => {
+  test(title('TC-CART-05'), async ({ cartPage }) => {
     await test.step('Given: มีสินค้าใน cart', async () => {
-      await addProductToCart(userPage);
-      await userPage.goto('/cart.html');
-      await expect(userPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
+      await addProductToCart(cartPage);
+      await cartPage.goto('/cart.html');
+      await expect(cartPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
     });
 
     await test.step('When: คลิก clear-cart-btn', async () => {
-      userPage.once('dialog', dialog => dialog.accept());
-      await userPage.click('[data-testid="clear-cart-btn"]');
+      cartPage.once('dialog', dialog => dialog.accept());
+      await cartPage.click('[data-testid="clear-cart-btn"]');
     });
 
     await test.step('Then: ไม่มี cart-item เหลือ', async () => {
-      await expect(userPage.locator('[data-testid="empty-cart"]')).toBeVisible();
-      expect(await userPage.locator('[data-testid="cart-item"]').count()).toBe(0);
+      await expect(cartPage.locator('[data-testid="empty-cart"]')).toBeVisible();
+      expect(await cartPage.locator('[data-testid="cart-item"]').count()).toBe(0);
     });
   });
 
-  test(title('TC-CART-06'), async ({ userPage }) => {
+  test(title('TC-CART-06'), async ({ cartPage }) => {
     await test.step('Given: มีสินค้าใน cart', async () => {
-      await addProductToCart(userPage);
-      await userPage.goto('/cart.html');
-      await expect(userPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
+      await addProductToCart(cartPage);
+      await cartPage.goto('/cart.html');
+      await expect(cartPage.locator('[data-testid="cart-item"]').first()).toBeVisible();
     });
 
     await test.step('When: คลิก checkout-btn', async () => {
-      await userPage.click('[data-testid="checkout-btn"]');
+      await cartPage.click('[data-testid="checkout-btn"]');
     });
 
     await test.step('Then: navigate ไป /checkout.html', async () => {
-      await expect(userPage).toHaveURL(/checkout/);
+      await expect(cartPage).toHaveURL(/checkout/);
     });
   });
 
